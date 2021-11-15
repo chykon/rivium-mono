@@ -8,7 +8,7 @@ Vcore (~hart): registers and fetcher
 
 Memory:
 circular byte-addressable, 2^XLEN (XLEN = 32)
-(!) REGRES (reserve for registers) = 128 * XLEN * VCOUNT (vcore count)
+(!) REGRES (reserve for registers) = RCOUNT (registers count) * XLEN * VCOUNT (vcore count)
 address computation with modulo (2^MEMPOW)-REGRES, MEMPOW = 16..32
 all as main memory
 
