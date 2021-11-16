@@ -1,0 +1,22 @@
+Specs:
+--
+“The RISC-V Instruction Set Manual, Volume I: User-Level ISA, Document Version 20191213”,
+Editors Andrew Waterman and Krste Asanovi´c, RISC-V Foundation, December 2019.
+--
+
+Vcore (~hart): registers and fetcher
+
+Memory:
+circular byte-addressable, 2^XLEN (XLEN = 32)
+(!) REGRES (reserve for registers) = RCOUNT (registers count) * XLEN * VCOUNT (vcore count)
+address computation with modulo (2^MEMPOW)-REGRES, MEMPOW = 16..32
+all as main memory
+
+Instructions:
+IALIGN = 32 bit
+ILEN = 32 bit
+little-endian
+
+Exceptions (fatal trap):
+instruction-address-misaligned
+illegal-instruction
