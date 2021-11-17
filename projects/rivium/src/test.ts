@@ -3,6 +3,8 @@ import * as common from './common.js'
 import * as vcore from './vcore.js'
 
 export class Test {
+  // Memory //
+
   testingMemory (): void {
     const mem = new memory.Memory(
       common.Xlen.word,
@@ -20,6 +22,8 @@ export class Test {
     }
   }
 
+  // Vcore //
+
   testingVcore (): void {
     const mem = new memory.Memory(
       common.Xlen.word,
@@ -28,6 +32,8 @@ export class Test {
       common.Mempow.med
     )
     const core = new vcore.Vcore(mem, common.Vnum.zero, common.Ialign.word, common.Ilen.word)
+
+    // PC-register
     try {
       core.fetchInstruction()
     } catch (error) {
@@ -61,7 +67,134 @@ export class Test {
         throw Error('testing vcore 3')
       }
     }
+
+    // ADDI
+    let instruction = 0 | vcore.Opcode.OP_IMM // opcode
+    instruction |= vcore.Regs.x31 * (2 ** 7) // rd
+    instruction |= 0b000 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x30 * (2 ** 15) // rs1
+    instruction |= 64 * (2 ** 20) // I-imm
+    mem.setByte(12, instruction)
+    mem.setByte(13, instruction >>> 8)
+    mem.setByte(14, instruction >>> 16)
+    mem.setByte(15, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x31) !== 64) {
+      throw Error('testing vcore 4')
+    }
+    if (core.getRegisterValue(vcore.Regs.x30) !== 64) {
+      throw Error('testing vcore 5')
+    }
+    instruction = 0 | vcore.Opcode.OP_IMM // opcode
+    instruction |= vcore.Regs.x31 * (2 ** 7) // rd
+    instruction |= 0b000 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x30 * (2 ** 15) // rs1
+    instruction |= -70 * (2 ** 20) // I-imm
+    mem.setByte(16, instruction)
+    mem.setByte(17, instruction >>> 8)
+    mem.setByte(18, instruction >>> 16)
+    mem.setByte(19, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x31) !== -6) {
+      throw Error('testing vcore 6')
+    }
+    if (core.getRegisterValue(vcore.Regs.x30) !== -6) {
+      throw Error('testing vcore 7')
+    }
+
+    // SLTI
+    instruction = 0 | vcore.Opcode.OP_IMM // opcode
+    instruction |= vcore.Regs.x20 * (2 ** 7) // rd
+    instruction |= 0b010 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x10 * (2 ** 15) // rs1
+    instruction |= 64 * (2 ** 20) // I-imm
+    mem.setByte(20, instruction)
+    mem.setByte(21, instruction >>> 8)
+    mem.setByte(22, instruction >>> 16)
+    mem.setByte(23, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x20) !== 1) {
+      throw Error('testing vcore 8')
+    }
+    if (core.getRegisterValue(vcore.Regs.x10) !== 0) {
+      throw Error('testing vcore 9')
+    }
+    instruction = 0 | vcore.Opcode.OP_IMM // opcode
+    instruction |= vcore.Regs.x20 * (2 ** 7) // rd
+    instruction |= 0b010 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x20 * (2 ** 15) // rs1
+    instruction |= -1 * (2 ** 20) // I-imm
+    mem.setByte(24, instruction)
+    mem.setByte(25, instruction >>> 8)
+    mem.setByte(26, instruction >>> 16)
+    mem.setByte(27, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x20) !== 0) {
+      throw Error('testing vcore 10')
+    }
+
+    // SLTIU
+    instruction = 0 | vcore.Opcode.OP_IMM // opcode
+    instruction |= vcore.Regs.x30 * (2 ** 7) // rd
+    instruction |= 0b011 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= 64 * (2 ** 20) // I-imm
+    mem.setByte(28, instruction)
+    mem.setByte(29, instruction >>> 8)
+    mem.setByte(30, instruction >>> 16)
+    mem.setByte(31, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x30) !== 0) {
+      throw Error('testing vcore 11')
+    }
+
+    // ANDI
+    instruction = 0 | vcore.Opcode.OP_IMM // opcode
+    instruction |= vcore.Regs.x30 * (2 ** 7) // rd
+    instruction |= 0b111 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= 6 * (2 ** 20) // I-imm
+    mem.setByte(32, instruction)
+    mem.setByte(33, instruction >>> 8)
+    mem.setByte(34, instruction >>> 16)
+    mem.setByte(35, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x30) !== 2) {
+      throw Error('testing vcore 12')
+    }
+
+    // ORI
+    instruction = 0 | vcore.Opcode.OP_IMM // opcode
+    instruction |= vcore.Regs.x30 * (2 ** 7) // rd
+    instruction |= 0b110 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= 6 * (2 ** 20) // I-imm
+    mem.setByte(36, instruction)
+    mem.setByte(37, instruction >>> 8)
+    mem.setByte(38, instruction >>> 16)
+    mem.setByte(39, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x30) !== -2) {
+      throw Error('testing vcore 13')
+    }
+
+    // XORI
+    instruction = 0 | vcore.Opcode.OP_IMM // opcode
+    instruction |= vcore.Regs.x30 * (2 ** 7) // rd
+    instruction |= 0b100 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= 6 * (2 ** 20) // I-imm
+    mem.setByte(40, instruction)
+    mem.setByte(41, instruction >>> 8)
+    mem.setByte(42, instruction >>> 16)
+    mem.setByte(43, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x30) !== -4) {
+      throw Error('testing vcore 14')
+    }
   }
+
+  // All //
 
   testingAll (): void {
     console.log('BEGIN TESTING ALL')
