@@ -135,6 +135,12 @@ export class Vcore {
   // Fetcher //
 
   fetchInstruction (): void {
+    const ppcValue = this.getRegisterValue(Regs.ppc, true)
+    if ((ppcValue % 4) !== 0) {
+      this.throwInstructionAddressMisalignedException(ppcValue)
+      return
+    }
+
     this.setRegisterValue(Regs.ppc, this.getRegisterValue(Regs.pc, true), true)
 
     const byte1 = (this.mem.getByte(this.getRegisterValue(Regs.pc, true)) * (2 ** 0)) >>> 0
@@ -154,7 +160,7 @@ export class Vcore {
       const rs1 = (instruction >>> 15) & 0b11111
       const funct3 = (instruction >>> 12) & 0b111
       if (funct3 === 0b000) {
-        // ADDI
+        // ADDI; NOP (ADDI x0, x0, 0)
         // rd = rs1 = rs1 + imm
         const immValue = this.iimmToValue(instruction) >> 0
         this.setRegisterValue(rs1, this.getRegisterValue(rs1) + immValue)
@@ -196,11 +202,160 @@ export class Vcore {
         // rd = rs1 XOR imm
         const immValue = this.iimmToValue(instruction)
         this.setRegisterValue(rd, this.getRegisterValue(rs1) ^ immValue)
+      } else if (funct3 === 0b001) {
+        // SLLI
+        // rd = rs1 << (imm & 0b11111)
+        const immValue = this.iimmToValue(instruction)
+        const shamt = immValue & 0b11111
+        this.setRegisterValue(rd, this.getRegisterValue(rs1) * (2 ** shamt))
+      } else if (funct3 === 0b101) {
+        const immValue = this.iimmToValue(instruction)
+        const shamt = immValue & 0b11111
+        const shiftType = immValue & 0b010000000000
+        if (shiftType === 0) {
+          // SRLI
+          // rd = rs1 >>> shamt
+          this.setRegisterValue(rd, this.getRegisterValue(rs1) >>> shamt)
+        } else if (shiftType === 0b010000000000) {
+          // SRAI
+          // rd = rs1 >> shamt
+          this.setRegisterValue(rd, this.getRegisterValue(rs1) >> shamt)
+        } else {
+          let instructionBinary = (instruction >>> 0).toString(2)
+          instructionBinary = instructionBinary.padStart(this.ilen, '0')
+          this.throwIllegalInstructionException(instructionBinary)
+        }
       } else {
         let instructionBinary = (instruction >>> 0).toString(2)
         instructionBinary = instructionBinary.padStart(this.ilen, '0')
         this.throwIllegalInstructionException(instructionBinary)
       }
+    } else if (opcode === Opcode.LUI) {
+      // LUI
+      // rd = imm & 0b11111111111111111111000000000000
+      const rd = (instruction >>> 7) & 0b11111
+      const immValue = this.uimmToValue(instruction) >> 0
+      this.setRegisterValue(rd, immValue)
+    } else if (opcode === Opcode.AUIPC) {
+      // AUIPC
+      // rd = imm + ppc
+      const rd = (instruction >>> 7) & 0b11111
+      const immValue = this.uimmToValue(instruction) >> 0
+      this.setRegisterValue(rd, (immValue + this.getRegisterValue(Regs.ppc, true)))
+    } else if (opcode === Opcode.OP) {
+      // Integer Register-Register Operations
+      const rd = (instruction >>> 7) & 0b11111
+      const rs1 = (instruction >>> 15) & 0b11111
+      const rs2 = (instruction >>> 20) & 0b11111
+      const funct3 = (instruction >>> 12) & 0b111
+      const funct7 = (instruction >>> 25) & 0b1111111
+      if (funct7 === 0) {
+        if (funct3 === 0b000) {
+          // ADD
+          // rd = rs1 + rs2
+          const result = this.getRegisterValue(rs1) + this.getRegisterValue(rs2)
+          this.setRegisterValue(rd, result)
+        } else if (funct3 === 0b010) {
+          // SLT
+          // rd = 1 if (rs1 < rs2) else 0
+          let result = 0
+          if (this.getRegisterValue(rs1) < this.getRegisterValue(rs2)) {
+            result = 1
+          } else {
+            result = 0
+          }
+          this.setRegisterValue(rd, result)
+        } else if (funct3 === 0b011) {
+          // SLTU
+          // rd = 1 if ((rs1>>>0) < (rs2>>>0)) else 0
+          let result = 0
+          if ((this.getRegisterValue(rs1) >>> 0) < (this.getRegisterValue(rs2) >>> 0)) {
+            result = 1
+          } else {
+            result = 0
+          }
+          this.setRegisterValue(rd, result)
+        } else if (funct3 === 0b111) {
+          // AND
+          // rd = rs1 & rs2
+          const result = this.getRegisterValue(rs1) & this.getRegisterValue(rs2)
+          this.setRegisterValue(rd, result)
+        } else if (funct3 === 0b110) {
+          // OR
+          // rd = rs1 | rs2
+          const result = this.getRegisterValue(rs1) | this.getRegisterValue(rs2)
+          this.setRegisterValue(rd, result)
+        } else if (funct3 === 0b100) {
+          // XOR
+          // rd = rs1 ^ rs2
+          const result = this.getRegisterValue(rs1) ^ this.getRegisterValue(rs2)
+          this.setRegisterValue(rd, result)
+        } else if (funct3 === 0b001) {
+          // SLL
+          // rd = rs1 << (rs2 & 0b11111)
+          const result = this.getRegisterValue(rs1) * (2 ** (this.getRegisterValue(rs2) & 0b11111))
+          this.setRegisterValue(rd, result)
+        } else if (funct3 === 0b101) {
+          // SRL
+          // rd = rs1 >>> (rs2 & 0b11111)
+          const result = this.getRegisterValue(rs1) >>> (this.getRegisterValue(rs2) & 0b11111)
+          this.setRegisterValue(rd, result)
+        } else {
+          let instructionBinary = (instruction >>> 0).toString(2)
+          instructionBinary = instructionBinary.padStart(this.ilen, '0')
+          this.throwIllegalInstructionException(instructionBinary)
+        }
+      } else if (funct7 === 0b0100000) {
+        if (funct3 === 0b000) {
+          // SUB
+          // rd = rs1 - rs2
+          const result = this.getRegisterValue(rs1) - this.getRegisterValue(rs2)
+          this.setRegisterValue(rd, result)
+        } else if (funct3 === 0b101) {
+          // SRA
+          // rd = rs1 >> (rs2 & 0b11111)
+          const result = this.getRegisterValue(rs1) >> (this.getRegisterValue(rs2) & 0b11111)
+          this.setRegisterValue(rd, result)
+        } else {
+          let instructionBinary = (instruction >>> 0).toString(2)
+          instructionBinary = instructionBinary.padStart(this.ilen, '0')
+          this.throwIllegalInstructionException(instructionBinary)
+        }
+      } else {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
+    } else if (opcode === Opcode.JAL) {
+      // Control Transfer Instructions
+      // Unconditional Jumps
+      // JAL
+      // rd = pc
+      // pc = ppc + imm
+      const rd = (instruction >>> 7) & 0b11111
+      const immValue = this.jimmToValue(instruction) >> 0
+      this.setRegisterValue(rd, this.getRegisterValue(Regs.pc, true))
+      this.setRegisterValue(Regs.pc, this.getRegisterValue(Regs.ppc, true) + immValue, true)
+    } else if (opcode === Opcode.JALR) {
+      // JALR
+      // rd = pc
+      // pc = ppc + (0b11111111111111111111111111111110 & (rs1 + imm))
+      const rd = (instruction >>> 7) & 0b11111
+      const rs1 = (instruction >>> 15) & 0b11111
+      const funct3 = (instruction >>> 12) & 0b111
+      if (funct3 === 0b000) {
+        const immValue = this.iimmToValue(instruction) >> 0
+        let result = this.getRegisterValue(rs1) + immValue
+        result &= 0b11111111111111111111111111111110
+        result += this.getRegisterValue(Regs.ppc, true)
+        this.setRegisterValue(rd, this.getRegisterValue(Regs.pc, true))
+        this.setRegisterValue(Regs.pc, result, true)
+      } else {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
+
     } else {
       let instructionBinary = (instruction >>> 0).toString(2)
       instructionBinary = instructionBinary.padStart(this.ilen, '0')
@@ -348,13 +503,9 @@ export class Vcore {
 
   // Exceptions //
 
-  throwInstructionAddressMisalignedException (previousJump: boolean): void {
+  throwInstructionAddressMisalignedException (ppcValue: number): void {
     // fatal trap
-    if (previousJump) {
-      throw Error('exception:instruction-address-misaligned:jump')
-    } else {
-      throw Error('exception:instruction-address-misaligned')
-    }
+    throw Error('exception:instruction-address-misaligned:ppc:' + ppcValue.toString())
   }
 
   throwIllegalInstructionException (instruction: string): void {
