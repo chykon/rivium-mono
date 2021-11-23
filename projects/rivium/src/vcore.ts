@@ -135,9 +135,10 @@ export class Vcore {
   // Fetcher //
 
   fetchInstruction (): void {
+    const pcValue = this.getRegisterValue(Regs.pc, true)
     const ppcValue = this.getRegisterValue(Regs.ppc, true)
-    if ((ppcValue % 4) !== 0) {
-      this.throwInstructionAddressMisalignedException(ppcValue)
+    if ((pcValue % 4) !== 0) {
+      this.throwInstructionAddressMisalignedException(pcValue, ppcValue)
       return
     }
 
@@ -355,7 +356,173 @@ export class Vcore {
         instructionBinary = instructionBinary.padStart(this.ilen, '0')
         this.throwIllegalInstructionException(instructionBinary)
       }
-
+    } else if (opcode === Opcode.BRANCH) {
+      // Conditional Branches
+      // branch: pc = ppc + imm
+      const rs1 = (instruction >>> 15) & 0b11111
+      const rs2 = (instruction >>> 20) & 0b11111
+      const funct3 = (instruction >>> 12) & 0b111
+      const immValue = this.bimmToValue(instruction) >>> 0
+      if (funct3 === 0b000) {
+        // BEQ
+        // if (rs1 === rs2) {branch}
+        if (this.getRegisterValue(rs1) === this.getRegisterValue(rs2)) {
+          const adr = this.getRegisterValue(Regs.ppc, true) + immValue
+          this.setRegisterValue(Regs.pc, adr, true)
+        }
+      } else if (funct3 === 0b001) {
+        // BNE
+        // if (rs1 !== rs2) {branch}
+        if (this.getRegisterValue(rs1) !== this.getRegisterValue(rs2)) {
+          const adr = this.getRegisterValue(Regs.ppc, true) + immValue
+          this.setRegisterValue(Regs.pc, adr, true)
+        }
+      } else if (funct3 === 0b100) {
+        // BLT
+        // if (rs1 < rs2) {branch}
+        if (this.getRegisterValue(rs1) < this.getRegisterValue(rs2)) {
+          const adr = this.getRegisterValue(Regs.ppc, true) + immValue
+          this.setRegisterValue(Regs.pc, adr, true)
+        }
+      } else if (funct3 === 0b110) {
+        // BLTU
+        // if ((rs1>>>0) < (rs2>>>0)) {branch}
+        if ((this.getRegisterValue(rs1) >>> 0) < (this.getRegisterValue(rs2) >>> 0)) {
+          const adr = this.getRegisterValue(Regs.ppc, true) + immValue
+          this.setRegisterValue(Regs.pc, adr, true)
+        }
+      } else if (funct3 === 0b101) {
+        // BGE
+        // if (rs1 >= rs2) {branch}
+        if (this.getRegisterValue(rs1) >= this.getRegisterValue(rs2)) {
+          const adr = this.getRegisterValue(Regs.ppc, true) + immValue
+          this.setRegisterValue(Regs.pc, adr, true)
+        }
+      } else if (funct3 === 0b111) {
+        // BGEU
+        // if ((rs1>>>0) >= (rs2>>>0)) {branch}
+        if ((this.getRegisterValue(rs1) >>> 0) >= (this.getRegisterValue(rs2) >>> 0)) {
+          const adr = this.getRegisterValue(Regs.ppc, true) + immValue
+          this.setRegisterValue(Regs.pc, adr, true)
+        }
+      } else {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
+    } else if (opcode === Opcode.LOAD) {
+      // Load and Store Instructions
+      // adr = rs1 + imm
+      const rd = (instruction >>> 7) & 0b11111
+      if (rd === Regs.x0) {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
+      const rs1 = (instruction >>> 15) & 0b11111
+      const funct3 = (instruction >>> 12) & 0b111
+      const immValue = this.iimmToValue(instruction) >> 0
+      const adr = this.getRegisterValue(rs1) + immValue
+      if (funct3 === 0b000) {
+        // LB
+        // rd = signExt(mem[adr])
+        const memData = this.mem.getByte(adr)
+        this.setRegisterValue(rd, memData)
+      } else if (funct3 === 0b001) {
+        // LH
+        // rd = signExt(mem[adr..adr+1])
+        let memData = this.mem.getByte(adr)
+        memData |= this.mem.getByte(adr + 1) * (2 ** 8)
+        if (((this.mem.getByte(adr + 1) >>> 7) & 0b1) === 0b1) {
+          memData |= 0b11111111111111110000000000000000
+        } else {
+          memData &= 0b00000000000000001111111111111111
+        }
+        this.setRegisterValue(rd, memData)
+      } else if (funct3 === 0b010) {
+        // LW
+        // rd = signExt(mem[adr..adr+3])
+        let memData = this.mem.getByte(adr)
+        memData |= this.mem.getByte(adr + 1) * (2 ** 8)
+        memData |= this.mem.getByte(adr + 2) * (2 ** 16)
+        memData |= this.mem.getByte(adr + 3) * (2 ** 24)
+        this.setRegisterValue(rd, memData)
+      } else if (funct3 === 0b100) {
+        // LBU
+        // rd = zeroExt(mem[adr])
+        const memData = (this.mem.getByte(adr) >>> 0)
+        this.setRegisterValue(rd, memData)
+      } else if (funct3 === 0b101) {
+        // LHU
+        // rd = zeroExt(mem[adr..adr+1])
+        let memData = (this.mem.getByte(adr)) >>> 0
+        memData |= (this.mem.getByte(adr + 1) * (2 ** 8)) >>> 0
+        memData >>>= 0
+        this.setRegisterValue(rd, memData)
+      } else {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
+    } else if (opcode === Opcode.STORE) {
+      const rs1 = (instruction >>> 15) & 0b11111
+      const rs2 = (instruction >>> 20) & 0b11111
+      const funct3 = (instruction >>> 12) & 0b111
+      const immValue = this.simmToValue(instruction) >> 0
+      const adr = this.getRegisterValue(rs1) + immValue
+      if (funct3 === 0b000) {
+        // SB
+        // mem[adr] = rs2[0]
+        this.mem.setByte(adr, this.getRegisterValue(rs2))
+      } else if (funct3 === 0b001) {
+        // SH
+        // mem[adr..adr+1] = rs2[0..1]
+        this.mem.setByte(adr + 0, this.getRegisterValue(rs2))
+        this.mem.setByte(adr + 1, this.getRegisterValue(rs2) >> 8)
+      } else if (funct3 === 0b010) {
+        // SW
+        // mem[adr..adr+3] = rs2[0..3]
+        this.mem.setByte(adr + 0, this.getRegisterValue(rs2))
+        this.mem.setByte(adr + 1, this.getRegisterValue(rs2) >> 8)
+        this.mem.setByte(adr + 2, this.getRegisterValue(rs2) >> 16)
+        this.mem.setByte(adr + 3, this.getRegisterValue(rs2) >> 24)
+      } else {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
+    } else if (opcode === Opcode.MISC_MEM) {
+      // Memory Ordering Instructions
+      const funct3 = (instruction >>> 12) & 0b111
+      if (funct3 === 0b000) {
+        // FENCE = NOP
+      } else {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
+    } else if (opcode === Opcode.SYSTEM) {
+      // Environment Call and Breakpoints
+      const rd = (instruction >>> 7) & 0b11111
+      const rs1 = (instruction >>> 15) & 0b11111
+      const funct3 = (instruction >>> 12) & 0b111
+      const funct12 = (instruction >>> 20) & 0b111111111111
+      if ((rd !== 0) || (rs1 !== 0) || (funct3 !== 0)) {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
+      if (funct12 === 0) {
+        // ECALL
+        throw Error('ECALL')
+      } else if (funct12 === 1) {
+        // EBREAK
+        throw Error('EBREAK')
+      } else {
+        let instructionBinary = (instruction >>> 0).toString(2)
+        instructionBinary = instructionBinary.padStart(this.ilen, '0')
+        this.throwIllegalInstructionException(instructionBinary)
+      }
     } else {
       let instructionBinary = (instruction >>> 0).toString(2)
       instructionBinary = instructionBinary.padStart(this.ilen, '0')
@@ -503,9 +670,10 @@ export class Vcore {
 
   // Exceptions //
 
-  throwInstructionAddressMisalignedException (ppcValue: number): void {
+  throwInstructionAddressMisalignedException (pcValue: number, ppcValue: number): void {
     // fatal trap
-    throw Error('exception:instruction-address-misaligned:ppc:' + ppcValue.toString())
+    const info = ':pc:' + pcValue.toString() + ':ppc:' + ppcValue.toString()
+    throw Error('exception:instruction-address-misaligned' + info)
   }
 
   throwIllegalInstructionException (instruction: string): void {

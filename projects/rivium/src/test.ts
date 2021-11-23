@@ -433,7 +433,7 @@ export class Test {
     // JAL
     instruction = 0 | vcore.Opcode.JAL // opcode
     instruction |= vcore.Regs.x15 * (2 ** 7) // rd
-    instruction |= core.valueToJimm(112) // imm
+    instruction |= core.valueToJimm(8) // imm
     mem.setByte(104, instruction)
     mem.setByte(105, instruction >>> 8)
     mem.setByte(106, instruction >>> 16)
@@ -442,20 +442,301 @@ export class Test {
     mem.setByte(113, 0b11111111)
     mem.setByte(114, 0b11111111)
     mem.setByte(115, 0b11111111)
+    core.fetchInstruction()
+    if ((core.getRegisterValue(vcore.Regs.x15) >>> 0) !== 108) {
+      throw Error('testing vcore 30')
+    }
     try {
       core.fetchInstruction()
     } catch (error) {
       const instruction = (((error as Error).message).split(':')).pop()
       if (instruction !== '11111111111111111111111111111111') {
-        throw Error('testing vcore 30')
+        throw Error('testing vcore 31')
       }
-    }
-    if ((core.getRegisterValue(vcore.Regs.x15) >>> 0) !== 108) {
-      throw Error('testing vcore 31')
     }
 
     // JALR
-    // misaligned exception test
+    instruction = 0 | vcore.Opcode.JALR // opcode
+    instruction |= vcore.Regs.x31 * (2 ** 7) // rd
+    instruction |= 0b000 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x0 * (2 ** 15) // rs1
+    instruction |= 2 * (2 ** 20) // I-imm
+    mem.setByte(116, instruction)
+    mem.setByte(117, instruction >>> 8)
+    mem.setByte(118, instruction >>> 16)
+    mem.setByte(119, instruction >>> 24)
+    core.fetchInstruction()
+    if (core.getRegisterValue(vcore.Regs.x31) !== 120) {
+      throw Error('testing vcore 32')
+    }
+    try {
+      core.fetchInstruction()
+    } catch (error) {
+      const msg = ((error as Error).message).split(':')
+      const ppcValue = msg.pop()
+      msg.pop()
+      const pcValue = msg.pop()
+      if ((ppcValue !== '116') || (pcValue !== '118')) {
+        throw Error('testing vcore 33')
+      }
+    }
+    core.setRegisterValue(vcore.Regs.pc, 120, true)
+
+    // BEQ
+    instruction = 0 | vcore.Opcode.BRANCH // opcode
+    instruction |= 0b000 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x0 * (2 ** 15) // rs1
+    instruction |= vcore.Regs.x0 * (2 ** 20) // rs2
+    instruction |= core.valueToBimm(8) // imm
+    mem.setByte(120, instruction)
+    mem.setByte(121, instruction >>> 8)
+    mem.setByte(122, instruction >>> 16)
+    mem.setByte(123, instruction >>> 24)
+    core.fetchInstruction()
+    let pcValue = core.getRegisterValue(vcore.Regs.pc, true) >>> 0
+    let ppcValue = core.getRegisterValue(vcore.Regs.ppc, true) >>> 0
+    if ((pcValue !== 128) || (ppcValue !== 120)) {
+      throw Error('testing vcore 34')
+    }
+
+    // BNE
+    instruction = 0 | vcore.Opcode.BRANCH // opcode
+    instruction |= 0b001 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x0 * (2 ** 15) // rs1
+    instruction |= vcore.Regs.x0 * (2 ** 20) // rs2
+    instruction |= core.valueToBimm(8) // imm
+    mem.setByte(128, instruction)
+    mem.setByte(129, instruction >>> 8)
+    mem.setByte(130, instruction >>> 16)
+    mem.setByte(131, instruction >>> 24)
+    core.fetchInstruction()
+    pcValue = core.getRegisterValue(vcore.Regs.pc, true) >>> 0
+    ppcValue = core.getRegisterValue(vcore.Regs.ppc, true) >>> 0
+    if ((pcValue !== 132) || (ppcValue !== 128)) {
+      throw Error('testing vcore 35')
+    }
+
+    // BLT
+    instruction = 0 | vcore.Opcode.BRANCH // opcode
+    instruction |= 0b100 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= vcore.Regs.x0 * (2 ** 20) // rs2
+    instruction |= core.valueToBimm(100) // imm
+    mem.setByte(132, instruction)
+    mem.setByte(133, instruction >>> 8)
+    mem.setByte(134, instruction >>> 16)
+    mem.setByte(135, instruction >>> 24)
+    core.fetchInstruction()
+    pcValue = core.getRegisterValue(vcore.Regs.pc, true) >>> 0
+    ppcValue = core.getRegisterValue(vcore.Regs.ppc, true) >>> 0
+    if ((pcValue !== 136) || (ppcValue !== 132)) {
+      throw Error('testing vcore 36')
+    }
+    core.setRegisterValue(vcore.Regs.x1, -1)
+
+    // BLTU
+    instruction = 0 | vcore.Opcode.BRANCH // opcode
+    instruction |= 0b110 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= vcore.Regs.x1 * (2 ** 20) // rs2
+    instruction |= core.valueToBimm(100) // imm
+    mem.setByte(136, instruction)
+    mem.setByte(137, instruction >>> 8)
+    mem.setByte(138, instruction >>> 16)
+    mem.setByte(139, instruction >>> 24)
+    core.fetchInstruction()
+    pcValue = core.getRegisterValue(vcore.Regs.pc, true) >>> 0
+    ppcValue = core.getRegisterValue(vcore.Regs.ppc, true) >>> 0
+    if ((pcValue !== 236) || (ppcValue !== 136)) {
+      throw Error('testing vcore 37')
+    }
+
+    // BGE
+    instruction = 0 | vcore.Opcode.BRANCH // opcode
+    instruction |= 0b101 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= vcore.Regs.x1 * (2 ** 20) // rs2
+    instruction |= core.valueToBimm(8) // imm
+    mem.setByte(236, instruction)
+    mem.setByte(237, instruction >>> 8)
+    mem.setByte(238, instruction >>> 16)
+    mem.setByte(239, instruction >>> 24)
+    core.fetchInstruction()
+    pcValue = core.getRegisterValue(vcore.Regs.pc, true) >>> 0
+    ppcValue = core.getRegisterValue(vcore.Regs.ppc, true) >>> 0
+    if ((pcValue !== 244) || (ppcValue !== 236)) {
+      throw Error('testing vcore 38')
+    }
+
+    // BGEU
+    instruction = 0 | vcore.Opcode.BRANCH // opcode
+    instruction |= 0b111 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= vcore.Regs.x1 * (2 ** 20) // rs2
+    instruction |= core.valueToBimm(8) // imm
+    mem.setByte(244, instruction)
+    mem.setByte(245, instruction >>> 8)
+    mem.setByte(246, instruction >>> 16)
+    mem.setByte(247, instruction >>> 24)
+    core.fetchInstruction()
+    pcValue = core.getRegisterValue(vcore.Regs.pc, true) >>> 0
+    ppcValue = core.getRegisterValue(vcore.Regs.ppc, true) >>> 0
+    if ((pcValue !== 248) || (ppcValue !== 244)) {
+      throw Error('testing vcore 39')
+    }
+
+    // LB
+    instruction = 0 | vcore.Opcode.LOAD // opcode
+    instruction |= vcore.Regs.x0 * (2 ** 7) // rd
+    instruction |= 0b000 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1
+    instruction |= core.valueToIimm(1) // I-imm
+    mem.setByte(248, instruction)
+    mem.setByte(249, instruction >>> 8)
+    mem.setByte(250, instruction >>> 16)
+    mem.setByte(251, instruction >>> 24)
+    try {
+      core.fetchInstruction()
+    } catch (error) {
+      const msg = ((error as Error).message).split(':')
+      if (msg.pop() !== '00000000000111111000000000000011') {
+        throw Error('testing vcore 40')
+      }
+    }
+    instruction = 0 | vcore.Opcode.LOAD // opcode
+    instruction |= vcore.Regs.x1 * (2 ** 7) // rd
+    instruction |= 0b000 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1 (120)
+    instruction |= core.valueToIimm(-3) // I-imm
+    mem.setByte(252, instruction)
+    mem.setByte(253, instruction >>> 8)
+    mem.setByte(254, instruction >>> 16)
+    mem.setByte(255, instruction >>> 24)
+    core.fetchInstruction()
+    if ((core.getRegisterValue(vcore.Regs.x1)) !== 0b1111) {
+      throw Error('testing vcore 41')
+    }
+
+    // LH
+    instruction = 0 | vcore.Opcode.LOAD // opcode
+    instruction |= vcore.Regs.x1 * (2 ** 7) // rd
+    instruction |= 0b001 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1 (120)
+    instruction |= core.valueToIimm(-113) // I-imm
+    mem.setByte(256, instruction)
+    mem.setByte(257, instruction >>> 8)
+    mem.setByte(258, instruction >>> 16)
+    mem.setByte(259, instruction >>> 24)
+    core.fetchInstruction()
+    if ((core.getRegisterValue(vcore.Regs.x1)) !== 0b111111111) {
+      throw Error('testing vcore 42')
+    }
+
+    // LW
+    instruction = 0 | vcore.Opcode.LOAD // opcode
+    instruction |= vcore.Regs.x1 * (2 ** 7) // rd
+    instruction |= 0b010 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1 (120)
+    instruction |= core.valueToIimm(-113) // I-imm
+    mem.setByte(260, instruction)
+    mem.setByte(261, instruction >>> 8)
+    mem.setByte(262, instruction >>> 16)
+    mem.setByte(263, instruction >>> 24)
+    core.fetchInstruction()
+    if ((core.getRegisterValue(vcore.Regs.x1)) !== 0b111000000110000000111111111) {
+      throw Error('testing vcore 43')
+    }
+
+    // LBU
+    instruction = 0 | vcore.Opcode.LOAD // opcode
+    instruction |= vcore.Regs.x1 * (2 ** 7) // rd
+    instruction |= 0b100 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1 (120)
+    instruction |= core.valueToIimm(-113) // I-imm
+    mem.setByte(264, instruction)
+    mem.setByte(265, instruction >>> 8)
+    mem.setByte(266, instruction >>> 16)
+    mem.setByte(267, instruction >>> 24)
+    mem.setByte(7, -2)
+    core.fetchInstruction()
+    if ((core.getRegisterValue(vcore.Regs.x1)) !== 0b11111110) {
+      throw Error('testing vcore 44')
+    }
+
+    // LHU
+    instruction = 0 | vcore.Opcode.LOAD // opcode
+    instruction |= vcore.Regs.x1 * (2 ** 7) // rd
+    instruction |= 0b101 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1 (120)
+    instruction |= core.valueToIimm(-113) // I-imm
+    mem.setByte(268, instruction)
+    mem.setByte(269, instruction >>> 8)
+    mem.setByte(270, instruction >>> 16)
+    mem.setByte(271, instruction >>> 24)
+    mem.setByte(8, -2)
+    core.fetchInstruction()
+    if ((core.getRegisterValue(vcore.Regs.x1)) !== 0b1111111011111110) {
+      throw Error('testing vcore 45')
+    }
+
+    // SB
+    core.setRegisterValue(vcore.Regs.x30, -7)
+    instruction = 0 | vcore.Opcode.STORE // opcode
+    instruction |= 0b000 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1 (120)
+    instruction |= vcore.Regs.x30 * (2 ** 20) // rs2 (-7)
+    instruction |= core.valueToSimm(180) // S-imm
+    mem.setByte(272, instruction)
+    mem.setByte(273, instruction >>> 8)
+    mem.setByte(274, instruction >>> 16)
+    mem.setByte(275, instruction >>> 24)
+    core.fetchInstruction()
+    if (mem.getByte(300) !== 0b11111001) {
+      throw Error('testing vcore 46')
+    }
+
+    // SH
+    mem.setByte(300, 0)
+    core.setRegisterValue(vcore.Regs.x30, -7)
+    instruction = 0 | vcore.Opcode.STORE // opcode
+    instruction |= 0b001 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1 (120)
+    instruction |= vcore.Regs.x30 * (2 ** 20) // rs2 (-7)
+    instruction |= core.valueToSimm(180) // S-imm
+    mem.setByte(276, instruction)
+    mem.setByte(277, instruction >>> 8)
+    mem.setByte(278, instruction >>> 16)
+    mem.setByte(279, instruction >>> 24)
+    core.fetchInstruction()
+    let memVal = mem.getByte(300 + 0)
+    memVal |= (mem.getByte(300 + 1)) * (2 ** 8)
+    if (memVal !== 0b1111111111111001) {
+      throw Error('testing vcore 47')
+    }
+
+    // SW
+    mem.setByte(300, 0)
+    mem.setByte(301, 0)
+    core.setRegisterValue(vcore.Regs.x30, -7)
+    instruction = 0 | vcore.Opcode.STORE // opcode
+    instruction |= 0b010 * (2 ** 12) // funct3
+    instruction |= vcore.Regs.x31 * (2 ** 15) // rs1 (120)
+    instruction |= vcore.Regs.x30 * (2 ** 20) // rs2 (-7)
+    instruction |= core.valueToSimm(180) // S-imm
+    mem.setByte(280, instruction)
+    mem.setByte(281, instruction >>> 8)
+    mem.setByte(282, instruction >>> 16)
+    mem.setByte(283, instruction >>> 24)
+    core.fetchInstruction()
+    memVal = mem.getByte(300 + 0)
+    memVal |= (mem.getByte(300 + 1)) * (2 ** 8)
+    memVal |= (mem.getByte(300 + 2)) * (2 ** 16)
+    memVal |= (mem.getByte(300 + 3)) * (2 ** 24)
+    if ((memVal >>> 0) !== 0b11111111111111111111111111111001) {
+      throw Error('testing vcore 48')
+    }
+
+    // FENCE = NOP
   }
 
   // All //
