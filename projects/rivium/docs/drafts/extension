@@ -1,0 +1,16 @@
+Extension for VSCode (web (vscode.dev)):
+  * core
+  * other
+    ** memory addresses
+    ** encoded instructions
+    ** linter
+    ** active pretty-printer
+    ** self-modifying code detection
+    ** repl
+  * assembler & disassembler
+    ** NOTE: https://github.com/riscv-non-isa/riscv-asm-manual
+    ** NOTE: https://github.com/riscv-non-isa/riscv-toolchain-conventions
+  * debugger
+  * simple I/O
+
+Focus: learning
