@@ -8,6 +8,7 @@ Extension for VSCode (web (vscode.dev)):
     ** self-modifying code detection
     ** repl
   * assembler & disassembler
+    ** NOTE: RISC-V Assembly Programmer’s Handbook (from RISC-V Spec)
     ** NOTE: https://github.com/riscv-non-isa/riscv-asm-manual
     ** NOTE: https://github.com/riscv-non-isa/riscv-toolchain-conventions
   * debugger
