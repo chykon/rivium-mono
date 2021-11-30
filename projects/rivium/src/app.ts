@@ -29,26 +29,19 @@ export function main (): void {
     '; let i = 0 ' + '\n' +
     '; let shft = 1 ' + '\n' +
     '; let memStart = 1024' + '\n' +
-    '; while (i !== 7) {' + '\n' +
-    ';   mem[memStart + i] = shft << 1' + '\n' +
+    '; while (i !== 8) {' + '\n' +
+    ';   mem[memStart + i] = shft << i' + '\n' +
     ';   ++i' + '\n' +
     '; }' + '\n' +
     'addi x1,x1,0' + '\n' +
+    'addi x10,x10,8' + '\n' +
     'addi x2,x2,1' + '\n' +
     'addi x3,x3,1024' + '\n' +
     'add x4,x3,x1' + '\n' +
-    'slli x5,x2,1' + '\n' +
-    'sb x3,x5,0' + '\n' +
+    'sll x5,x2,x1' + '\n' +
+    'sb x4,x5,0' + '\n' +
     'addi x1,x1,1' + '\n' +
-    '' + '\n' +
-    '' + '\n' +
-    '' + '\n' +
-    '' + '\n' +
-    '' + '\n' +
-    '' + '\n' +
-    '' + '\n' +
-    '' + '\n' +
-    '' + '\n'
+    'bne x1,x10,-16' + '\n'
   document.body.appendChild(textArea)
   const editorButton = document.createElement('button')
   editorButton.innerText = 'assembly & run'
