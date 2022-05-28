@@ -1,3 +1,3 @@
-# Rivium
+# rivium
 
-A virtual machine that implements RISC-V ISA. Built on a modern web platform.
+RISC-V emulator and tools.

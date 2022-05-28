@@ -1,3 +1,3 @@
-# Rivium Monorepository
+# Rivium-Mono
 
-All-in-One.
+[Устаревшая демонстрация прототипа](https://rivium.pages.dev)
