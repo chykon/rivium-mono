@@ -32,7 +32,8 @@
     "isolatedModules": true,
 
     // Language and Environment
-    "target": "ESNext"
+    "target": "ESNext",
+    "moduleResolution": "nodenext"
   },
 
 

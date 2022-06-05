@@ -1,4 +1,4 @@
-import * as vcore from './vcore.js'
+const vcore = require('./vcore.js')
 
 function encodeRegister (regName) {
   if (regName.charAt(0) !== 'x') {
@@ -8,7 +8,7 @@ function encodeRegister (regName) {
   return parseInt(regNameNumber, 10)
 }
 
-export function assembly (sourceCode, core) {
+function assembly (sourceCode, core) {
   const lines = sourceCode.split('\n')
   const machineCode = []
   for (const [index, line] of lines.entries()) {
@@ -740,4 +740,8 @@ export function assembly (sourceCode, core) {
     }
   }
   return new Uint8Array(machineCode)
+}
+
+module.exports = {
+  assembly
 }

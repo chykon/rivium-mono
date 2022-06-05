@@ -1,4 +1,4 @@
-export var Regs;
+var Regs;
 (function (Regs) {
   Regs[Regs["x0"] = 0] = "x0";
   Regs[Regs["x1"] = 1] = "x1";
@@ -36,7 +36,7 @@ export var Regs;
   Regs[Regs["ppc"] = 33] = "ppc"; // previous pc
 })(Regs || (Regs = {}));
 
-export var Opcode;
+var Opcode;
 (function (Opcode) {
   Opcode[Opcode["LOAD"] = 3] = "LOAD";
   Opcode[Opcode["STORE"] = 35] = "STORE";
@@ -73,7 +73,7 @@ export var Opcode;
   // inst[6:5] = 11 (>= 80b)
 })(Opcode || (Opcode = {}));
 
-export class Vcore {
+class Vcore {
   mem;
   vnum;
   ialign;
@@ -876,4 +876,10 @@ export class Vcore {
     // fatal trap
     throw new Error('exception:illegal-instruction:' + instruction);
   }
+}
+
+module.exports = {
+  Regs,
+  Opcode,
+  Vcore
 }

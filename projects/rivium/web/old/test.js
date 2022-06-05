@@ -1,8 +1,8 @@
-import * as memory from './memory.js'
-import * as common from './common.js'
-import * as vcore from './vcore.js'
+const memory = require('./memory.js')
+const common = require('./common.js')
+const vcore = require('./vcore.js')
 
-export class Test {
+class Test {
   // Memory //
   testingMemory () {
     const mem = new memory.Memory(common.Xlen.word, common.Vcount.one, common.Mrcount.default, common.Mempow.med)
@@ -695,4 +695,8 @@ export class Test {
     this.testingVcore()
     console.log('END TESTING ALL')
   }
+}
+
+module.exports = {
+  Test
 }

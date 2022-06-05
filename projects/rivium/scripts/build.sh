@@ -12,7 +12,8 @@ __init
 # # #
 
 main() (
-  wasm-pack build --target web --dev --out-dir build/rust/pkg
+  # --target web
+  wasm-pack build --target nodejs --dev --out-dir build/rust/pkg
   mkdir -p web/rust
   cp build/rust/pkg/rivium_bg.wasm web/rust
   cp build/rust/pkg/rivium.js web/rust

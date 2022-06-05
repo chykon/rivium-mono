@@ -1,4 +1,4 @@
-export class Memory {
+class Memory {
   xlen;
   space; // maximum length in bytes, 2^XLEN
   vcount;
@@ -41,4 +41,8 @@ export class Memory {
   computeAddress(address) {
     return address % this.length;
   }
+}
+
+module.exports = {
+  Memory
 }
